@@ -1,4 +1,4 @@
-# 拼音生成器
+# 拼音生成器模块
 # 作者：GitHub Copilot
 
 import re
@@ -39,8 +39,32 @@ def get_pinyin_string(text):
     返回格式为：[[["声母", "韵母"], ["声母", "韵母"]], ...]
     其中第一级是以标点符号为分隔的句子，第二级是句子中的字，第三级是每个字的声母和韵母
     """
+    # 如果输入为空，返回空列表
+    if not text:
+        return []
+        
+    # 如果不包含中文字符，尝试将整个文本作为一个句子处理
+    if not any('\u4e00' <= char <= '\u9fff' for char in text):
+        # 将文本中的每个字符视为一个单词，并分割成拼音对
+        words = text.split()
+        if not words:
+            words = [text]  # 如果没有空格分割，就把整个文本当作一个单词
+            
+        sentence_result = []
+        for word in words:
+            # 尝试直接拆分每个单词的拼音
+            for char in word:
+                if char.strip():  # 忽略空白字符
+                    pair = split_pinyin(char.lower())
+                    if pair[0] or pair[1]:
+                        sentence_result.append(pair)
+                        
+        if sentence_result:
+            return [sentence_result]
+        return []
+    
+    # 处理包含中文的文本
     # 使用标点符号将文本分割成句子
-    # 先将所有标点符号替换为特殊标记
     processed_text = text
     for char in text:
         if is_punctuation(char):
@@ -62,6 +86,7 @@ def get_pinyin_string(text):
         # 只添加非空的拼音对
         sentence_result = [pair for pair in pinyin_pairs if pair[0] or pair[1]]
         if sentence_result:
+            # 将整个句子的拼音对作为一个列表添加到结果中
             result.append(sentence_result)
     
     return result
@@ -100,8 +125,8 @@ def save_pinyin_string(pinyin_string, output_file="pinyin_string.txt"):
         print(f"保存拼音串失败: {e}")
         return False
 
-def main():
-    """主函数"""
+# 当作为独立程序运行时的入口点
+if __name__ == "__main__":
     import sys
     
     if len(sys.argv) > 1:
@@ -123,8 +148,6 @@ def main():
         print("未提供语料库文件路径，运行测试...")
         test_text = "例如，这是你找到的字符串啊"
         pinyin_string = get_pinyin_string(test_text)
+        print("生成的拼音串结构:")
         print(pinyin_string)
         save_pinyin_string(pinyin_string)
-
-if __name__ == "__main__":
-    main()

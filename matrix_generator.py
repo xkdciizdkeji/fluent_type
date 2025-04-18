@@ -1,4 +1,4 @@
-# 拼音概率矩阵生成器
+# 拼音概率矩阵生成器模块
 # 作者：GitHub Copilot
 
 import numpy as np
@@ -52,7 +52,7 @@ def create_frequency_matrix(pinyin_strings):
     
     return initials, finals, matrix
 
-def visualize_frequency_matrix(initials, finals, matrix, title="声母-韵母频率矩阵", output_file="pinyin_frequency_matrix.png"):
+def visualize_frequency_matrix(initials, finals, matrix, title="声母-韵母频率矩阵", output_file="pinyin_frequency_matrix.png", show=True):
     """
     将频率矩阵可视化为热力图
     
@@ -62,6 +62,7 @@ def visualize_frequency_matrix(initials, finals, matrix, title="声母-韵母频
         matrix: 声母-韵母频率矩阵
         title: 图表标题
         output_file: 输出文件路径
+        show: 是否显示图表
     """
     plt.figure(figsize=(16, 12))
     
@@ -78,7 +79,11 @@ def visualize_frequency_matrix(initials, finals, matrix, title="声母-韵母频
     # 保存图像
     plt.savefig(output_file, dpi=300)
     print(f"频率矩阵热力图已保存到 {output_file}")
-    plt.show()
+    
+    if show:
+        plt.show()
+    else:
+        plt.close()
 
 def save_matrix_data(initials, finals, matrix, output_file="matrix_data.json"):
     """
@@ -149,8 +154,8 @@ def load_pinyin_string(file_path="pinyin_string.txt"):
         print(f"加载拼音串失败: {e}")
         return []
 
-def main():
-    """主函数"""
+# 当作为独立程序运行时的入口点
+if __name__ == "__main__":
     import sys
     
     # 默认输入输出文件
@@ -181,6 +186,3 @@ def main():
         visualize_frequency_matrix(initials, finals, matrix, "拼音声母韵母频率矩阵", image_file)
     else:
         print("拼音串为空，请检查文件路径")
-
-if __name__ == "__main__":
-    main()
