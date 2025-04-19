@@ -1,5 +1,3 @@
-# 拼音概率矩阵生成器模块
-# 作者：GitHub Copilot
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -52,6 +50,31 @@ def create_frequency_matrix(pinyin_strings):
     
     return initials, finals, matrix
 
+def create_probability_matrix(initials, finals, freq_matrix):
+    """
+    将频率矩阵转换为概率矩阵
+    
+    Args:
+        initials: 声母列表
+        finals: 韵母列表
+        freq_matrix: 声母-韵母频率矩阵
+    
+    Returns:
+        prob_matrix: 概率矩阵
+        total_count: 总次数
+    """
+    # 计算总次数
+    total_count = np.sum(freq_matrix)
+    
+    # 如果总次数为0，返回全0矩阵
+    if total_count == 0:
+        return np.zeros_like(freq_matrix), 0
+    
+    # 创建概率矩阵
+    prob_matrix = freq_matrix / total_count
+    
+    return prob_matrix, total_count
+
 def visualize_frequency_matrix(initials, finals, matrix, title="声母-韵母频率矩阵", output_file="pinyin_frequency_matrix.png", show=True):
     """
     将频率矩阵可视化为热力图
@@ -79,6 +102,39 @@ def visualize_frequency_matrix(initials, finals, matrix, title="声母-韵母频
     # 保存图像
     plt.savefig(output_file, dpi=300)
     print(f"频率矩阵热力图已保存到 {output_file}")
+    
+    if show:
+        plt.show()
+    else:
+        plt.close()
+
+def visualize_probability_matrix(initials, finals, matrix, title="声母-韵母概率矩阵", output_file="pinyin_probability_matrix.png", show=True):
+    """
+    将概率矩阵可视化为热力图
+    
+    Args:
+        initials: 声母列表
+        finals: 韵母列表
+        matrix: 声母-韵母概率矩阵
+        title: 图表标题
+        output_file: 输出文件路径
+        show: 是否显示图表
+    """
+    plt.figure(figsize=(16, 12))
+    
+    # 创建热力图，使用对数刻度显示概率（加小数避免对0取对数）
+    log_matrix = np.log1p(matrix * 1000)  # 乘以1000使小概率更明显
+    sns.heatmap(log_matrix, annot=False, fmt=".2f", xticklabels=finals, yticklabels=initials, cmap="YlGnBu")
+    
+    plt.title(title, fontsize=16)
+    plt.xlabel("韵母", fontsize=14)
+    plt.ylabel("声母", fontsize=14)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    
+    # 保存图像
+    plt.savefig(output_file, dpi=300)
+    print(f"概率矩阵热力图已保存到 {output_file}")
     
     if show:
         plt.show()
@@ -137,6 +193,33 @@ def save_matrix_csv(initials, finals, matrix, output_file="pinyin_frequency_matr
         print(f"保存矩阵失败: {e}")
         return False
 
+def save_probability_matrix_csv(initials, finals, matrix, output_file="pinyin_probability_matrix.txt"):
+    """
+    将概率矩阵保存为CSV/TXT格式
+    
+    Args:
+        initials: 声母列表
+        finals: 韵母列表
+        matrix: 声母-韵母概率矩阵
+        output_file: 输出文件路径
+    """
+    try:
+        # 保存为带标题的CSV格式
+        with open(output_file, 'w', encoding='utf-8') as f:
+            # 写入标题行（韵母）
+            f.write("\t" + "\t".join(finals) + "\n")
+            
+            # 写入每一行（声母及对应的概率）
+            for i, initial in enumerate(initials):
+                row = [initial] + [f"{matrix[i, j]:.6f}" for j in range(len(finals))]
+                f.write("\t".join(row) + "\n")
+                
+        print(f"概率矩阵已保存到 {output_file}")
+        return True
+    except Exception as e:
+        print(f"保存概率矩阵失败: {e}")
+        return False
+
 def load_pinyin_string(file_path="pinyin_string.txt"):
     """
     从文件加载拼音串
@@ -160,29 +243,47 @@ if __name__ == "__main__":
     
     # 默认输入输出文件
     input_file = "pinyin_string.txt"
-    matrix_file = "pinyin_frequency_matrix.txt"
-    image_file = "pinyin_frequency_matrix.png"
+    freq_matrix_file = "pinyin_frequency_matrix.txt"
+    prob_matrix_file = "pinyin_probability_matrix.txt"
+    freq_image_file = "pinyin_frequency_matrix.png"
+    prob_image_file = "pinyin_probability_matrix.png"
     
     # 处理命令行参数
     if len(sys.argv) > 1:
         input_file = sys.argv[1]
     if len(sys.argv) > 2:
-        matrix_file = sys.argv[2]
+        freq_matrix_file = sys.argv[2]
     if len(sys.argv) > 3:
-        image_file = sys.argv[3]
+        freq_image_file = sys.argv[3]
+    if len(sys.argv) > 4:
+        prob_matrix_file = sys.argv[4]
+    if len(sys.argv) > 5:
+        prob_image_file = sys.argv[5]
     
     print(f"正在从 {input_file} 加载拼音串...")
     pinyin_strings = load_pinyin_string(input_file)
     
     if pinyin_strings:
         print("成功加载拼音串")
-        initials, finals, matrix = create_frequency_matrix(pinyin_strings)
         
-        print(f"发现 {len(initials)} 个声母, {len(finals)} 个韵母")
+        # 生成频率矩阵
+        initials, finals, freq_matrix = create_frequency_matrix(pinyin_strings)
+        
+        # 生成概率矩阵
+        prob_matrix, total_count = create_probability_matrix(initials, finals, freq_matrix)
+        
+        print(f"发现 {len(initials)} 个声母, {len(finals)} 个韵母, 总计 {int(total_count)} 个拼音")
+        
         print("保存频率矩阵数据...")
-        save_matrix_csv(initials, finals, matrix, matrix_file)
+        save_matrix_csv(initials, finals, freq_matrix, freq_matrix_file)
+        
+        print("保存概率矩阵数据...")
+        save_probability_matrix_csv(initials, finals, prob_matrix, prob_matrix_file)
         
         print("生成频率矩阵可视化...")
-        visualize_frequency_matrix(initials, finals, matrix, "拼音声母韵母频率矩阵", image_file)
+        visualize_frequency_matrix(initials, finals, freq_matrix, "拼音声母韵母频率矩阵", freq_image_file)
+        
+        print("生成概率矩阵可视化...")
+        visualize_probability_matrix(initials, finals, prob_matrix, "拼音声母韵母概率矩阵", prob_image_file)
     else:
         print("拼音串为空，请检查文件路径")
